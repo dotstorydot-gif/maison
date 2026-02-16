@@ -1,10 +1,9 @@
-"use client";
-
-import { useState } from "react";
-import { LayoutDashboard, Users, Calendar, Settings, TrendingUp, Clock, PoundSterling, Plus, Search, Bell } from "lucide-react";
+import { useState, useEffect } from "react";
+import { LayoutDashboard, Users, Calendar, Settings, TrendingUp, Clock, PoundSterling, Plus, Search, Bell, Lock, LogOut } from "lucide-react";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import Image from "next/image";
+import { supabase } from "@/lib/supabase";
 import ManualAppointmentModal from "@/components/admin/ManualAppointmentModal";
 import ServiceManager from "@/components/admin/ServiceManager";
 import EmployeeManager from "@/components/admin/EmployeeManager";
@@ -26,6 +25,106 @@ const STATS = [
 export default function AdminDashboard() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [activeTab, setActiveTab] = useState("Overview");
+    const [user, setUser] = useState<any>(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const [error, setError] = useState("");
+
+    useEffect(() => {
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            setUser(session?.user ?? null);
+            setIsLoading(false);
+        });
+
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+            setUser(session?.user ?? null);
+        });
+
+        return () => subscription.unsubscribe();
+    }, []);
+
+    const handleLogin = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setError("");
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) setError(error.message);
+    };
+
+    const handleLogout = async () => {
+        await supabase.auth.signOut();
+    };
+
+    if (isLoading) {
+        return (
+            <div className="min-h-screen bg-[#050505] flex items-center justify-center">
+                <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+            </div>
+        );
+    }
+
+    const isAdmin = user?.email?.endsWith('@maisondepoupee.com') ||
+        user?.email === 'admin@example.com' ||
+        user?.email === 'sameh@dot-story.com';
+
+    if (!user || !isAdmin) {
+        return (
+            <div className="min-h-screen bg-[#050505] flex items-center justify-center p-6">
+                <div className="max-w-md w-full glass p-10 rounded-[2.5rem] border-primary/20 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-1000">
+                    <div className="text-center space-y-2">
+                        <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                            <Lock className="w-8 h-8 text-primary" />
+                        </div>
+                        <h1 className="text-3xl font-black tracking-tight">MAISON ADMIN</h1>
+                        <p className="text-muted-foreground text-sm uppercase tracking-widest font-bold">Authorized Personnel Only</p>
+                    </div>
+
+                    {!user ? (
+                        <form onSubmit={handleLogin} className="space-y-4">
+                            <div className="space-y-1">
+                                <label className="text-[10px] font-black uppercase text-primary/40 ml-4 tracking-widest">Admin Email</label>
+                                <input
+                                    type="email"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    className="w-full bg-white/5 border border-white/5 rounded-2xl p-4 focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all"
+                                    placeholder="admin@maisondepoupee.com"
+                                    required
+                                />
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-[10px] font-black uppercase text-primary/40 ml-4 tracking-widest">Password</label>
+                                <input
+                                    type="password"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    className="w-full bg-white/5 border border-white/5 rounded-2xl p-4 focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all"
+                                    placeholder="••••••••"
+                                    required
+                                />
+                            </div>
+                            {error && <p className="text-red-500 text-xs font-bold text-center">{error}</p>}
+                            <button
+                                type="submit"
+                                className="w-full bg-primary hover:bg-primary/90 text-white p-4 rounded-xl font-black tracking-widest uppercase text-xs mt-4 shadow-xl shadow-primary/20 transition-all"
+                            >
+                                Enter Dashboard
+                            </button>
+                        </form>
+                    ) : (
+                        <div className="text-center space-y-6">
+                            <p className="text-red-500 font-bold bg-red-500/10 p-4 rounded-2xl text-sm leading-relaxed">
+                                Access Denied. Your account ({user.email}) does not have administrative privileges.
+                            </p>
+                            <button onClick={handleLogout} className="text-primary text-xs font-black uppercase tracking-widest hover:underline">
+                                Logout & Try Another Account
+                            </button>
+                        </div>
+                    )}
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen flex bg-secondary/5 text-primary">
@@ -61,10 +160,20 @@ export default function AdminDashboard() {
                     ))}
                 </nav>
 
-                <div className="p-4 bg-secondary/15 rounded-2xl space-y-3">
-                    <div className="font-bold text-sm uppercase tracking-wider opacity-60">Support</div>
-                    <p className="text-xs text-primary/40 leading-relaxed uppercase tracking-widest font-bold">Documentation & Help</p>
-                    <button className="w-full py-2.5 bg-white text-primary font-bold text-xs rounded-lg shadow-sm border border-secondary">Get Help</button>
+                <div className="mt-auto space-y-4">
+                    <button
+                        onClick={handleLogout}
+                        className="w-full flex items-center gap-3 p-3 rounded-xl text-red-500/40 hover:bg-red-500/10 hover:text-red-500 transition-all font-bold text-sm uppercase tracking-widest"
+                    >
+                        <LogOut className="w-5 h-5" />
+                        <span>Logout</span>
+                    </button>
+
+                    <div className="p-4 bg-secondary/15 rounded-2xl space-y-3">
+                        <div className="font-bold text-sm uppercase tracking-wider opacity-60">Support</div>
+                        <p className="text-xs text-primary/40 leading-relaxed uppercase tracking-widest font-bold">Documentation & Help</p>
+                        <button className="w-full py-2.5 bg-white text-primary font-bold text-xs rounded-lg shadow-sm border border-secondary">Get Help</button>
+                    </div>
                 </div>
             </aside>
 
