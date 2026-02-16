@@ -2,7 +2,12 @@ import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+const stripeSecretKey = process.env.STRIPE_SECRET_KEY || '';
+if (!stripeSecretKey) {
+    console.warn('Stripe Secret Key missing. Stripe client will not be initialized correctly.');
+}
+
+const stripe = new Stripe(stripeSecretKey, {
     apiVersion: '2025-01-27.acacia' as any,
 });
 
