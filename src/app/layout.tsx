@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { GoogleAnalytics } from '@next/third-parties/google';
 import { Inter, Outfit } from "next/font/google";
+import { SpeedInsights } from "@vercel/speed-insights/next"
 import "./globals.css";
 
 const outfit = Outfit({ subsets: ["latin"], variable: "--font-sans" });
@@ -52,6 +53,7 @@ export default function RootLayout({
     <html lang="en" className="dark" suppressHydrationWarning>
       <body className={`${outfit.variable} ${inter.variable} antialiased selection:bg-primary/30`}>
         {children}
+        <SpeedInsights />
         <GoogleAnalytics gaId="G-XXXXXXXXXX" />
       </body>
     </html>

@@ -1,9 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import { CreditCard, Lock, ChevronLeft, ChevronRight, CheckCircle2, AlertCircle, ShoppingBag, Calendar } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { loadStripe } from "@stripe/stripe-js";
+import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
+
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
 interface Service {
     id: string;
@@ -37,13 +41,12 @@ export default function PaymentGateway({ onBack, bookingDetails }: PaymentGatewa
     const [isProcessing, setIsProcessing] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [clientSecret, setClientSecret] = useState<string | null>(null);
 
-    const handlePayment = async () => {
+    const handleInitialSubmit = useCallback(async () => {
         setIsProcessing(true);
         setError(null);
-
         try {
-            // 1. Create Payment Intent
             const response = await fetch('/api/create-payment-intent', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -53,79 +56,22 @@ export default function PaymentGateway({ onBack, bookingDetails }: PaymentGatewa
                     customerDetails: { email: bookingDetails.customer.email }
                 }),
             });
-
             const data = await response.json();
             if (data.error) throw new Error(data.error);
-
-            // 2. Simulate Payment Delay
-            await new Promise(resolve => setTimeout(resolve, 2000));
-
-            // 3. Save to Supabase
-            // a. Handle Customer
-            const { data: customerData } = await supabase
-                .from('customers')
-                .select('id')
-                .eq('email', bookingDetails.customer.email)
-                .single();
-
-            let customerId = customerData?.id;
-
-            if (!customerId) {
-                const { data: newCustomer, error: custError } = await supabase
-                    .from('customers')
-                    .insert({
-                        full_name: bookingDetails.customer.fullName,
-                        email: bookingDetails.customer.email,
-                        phone: bookingDetails.customer.phone
-                    })
-                    .select('id')
-                    .single();
-                if (custError) throw custError;
-                customerId = newCustomer?.id;
-            }
-
-            // b. Create Appointment
-            const { data: appointment, error: bookingError } = await supabase
-                .from('appointments')
-                .insert({
-                    customer_id: customerId,
-                    appointment_date: bookingDetails.date,
-                    start_time: bookingDetails.time,
-                    end_time: bookingDetails.time, // Simplification
-                    total_amount: bookingDetails.totalPrice,
-                    deposit_amount: bookingDetails.paymentChoice === 'deposit' ? bookingDetails.paymentAmount : 0,
-                    payment_choice: bookingDetails.paymentChoice,
-                    status: 'confirmed', // Automated approval as requested
-                    payment_status: bookingDetails.paymentChoice === 'full' ? 'paid' : 'partially_paid',
-                    is_group_booking: bookingDetails.isGroup,
-                    group_size: bookingDetails.groupSize,
-                    stripe_payment_intent_id: data.clientSecret?.split('_secret')[0]
-                })
-                .select('id')
-                .single();
-
-            if (bookingError) throw bookingError;
-
-            // c. Link multiple services
-            const serviceLinks = bookingDetails.services.map(s => ({
-                appointment_id: appointment.id,
-                service_id: s.id
-            }));
-
-            const { error: linkError } = await supabase
-                .from('appointment_services')
-                .insert(serviceLinks);
-
-            if (linkError) throw linkError;
-
-            setIsSuccess(true);
-        } catch (err: any) {
-            console.error("Payment/Booking Error:", err);
-            setError(err.message || "An error occurred during booking.");
+            setClientSecret(data.clientSecret);
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : "Initialization failed";
+            setError(message);
         } finally {
             setIsProcessing(false);
         }
-    };
+    }, [bookingDetails.services, bookingDetails.paymentChoice, bookingDetails.customer.email]);
+
+    useEffect(() => {
+        if (!clientSecret) {
+            handleInitialSubmit();
+        }
+    }, [clientSecret, handleInitialSubmit]);
 
     if (isSuccess) {
         return (
@@ -166,7 +112,7 @@ export default function PaymentGateway({ onBack, bookingDetails }: PaymentGatewa
         );
     }
 
-    return (
+    const renderContent = () => (
         <div className="animate-in space-y-8">
             <header className="flex items-center gap-4">
                 <button onClick={onBack} className="p-3 hover:bg-white/5 rounded-full transition-colors">
@@ -203,18 +149,16 @@ export default function PaymentGateway({ onBack, bookingDetails }: PaymentGatewa
                         </div>
 
                         <div className="space-y-6 relative">
-                            <div className="p-8 bg-white/5 rounded-[2.5rem] border border-white/5 flex items-center justify-between group hover:border-primary/30 transition-all duration-500 cursor-not-allowed">
-                                <div className="flex items-center gap-6">
-                                    <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center border border-white/5 group-hover:scale-110 transition-transform">
-                                        <CreditCard className="w-8 h-8 text-primary/60" />
-                                    </div>
-                                    <div>
-                                        <p className="font-black text-xl mb-1">Card Details</p>
-                                        <p className="text-primary/40 font-mono tracking-[0.2em]">•••• •••• •••• 4242</p>
-                                    </div>
+                            {clientSecret ? (
+                                <div className="space-y-4 animate-in">
+                                    <PaymentElement />
                                 </div>
-                                <div className="text-[10px] font-black tracking-widest bg-primary/10 px-5 py-2.5 rounded-full uppercase text-primary border border-primary/20">Sandbox</div>
-                            </div>
+                            ) : (
+                                <div className="p-12 glass rounded-[2.5rem] flex flex-col items-center justify-center gap-6 animate-pulse">
+                                    <div className="w-12 h-12 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-primary/40">Initializing Secure Transaction...</p>
+                                </div>
+                            )}
                         </div>
 
                         <div className="pt-10 border-t border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-8 relative">
@@ -238,7 +182,7 @@ export default function PaymentGateway({ onBack, bookingDetails }: PaymentGatewa
                     </div>
                 </div>
 
-                <div className="lg:col-span-5 space-y-8">
+                <div className="lg:col-span-12 xl:col-span-5 space-y-8">
                     <div className="glass p-10 rounded-[3rem] border-primary/20 bg-primary/5 shadow-2xl relative overflow-hidden">
                         <div className="absolute bottom-0 left-0 w-64 h-64 bg-secondary/5 rounded-full -ml-32 -mb-32 blur-3xl" />
 
@@ -272,31 +216,24 @@ export default function PaymentGateway({ onBack, bookingDetails }: PaymentGatewa
                                     <span className="text-[10px] font-black uppercase tracking-widest text-primary/40">Subtotal</span>
                                     <span className="text-sm font-black opacity-40">£{bookingDetails.totalPrice.toFixed(2)}</span>
                                 </div>
-                                <div className="flex justify-between items-center bg-primary text-white p-5 rounded-2xl shadow-xl shadow-primary/10">
-                                    <div className="flex flex-col">
+                                <div className="flex flex-col sm:flex-row justify-between items-center bg-primary text-white p-6 rounded-2xl shadow-xl shadow-primary/10 gap-x-4 gap-y-2">
+                                    <div className="flex flex-col text-center sm:text-left">
                                         <span className="text-[9px] font-black uppercase tracking-widest opacity-60">Amount Due Now</span>
-                                        <span className="text-[9px] font-bold italic opacity-40">
-                                            {bookingDetails.paymentChoice === 'deposit' ? '50% Security Deposit' : 'Final Balance'}
+                                        <span className="text-[9px] font-bold italic opacity-40 leading-none">
+                                            {bookingDetails.paymentChoice === 'deposit' ? '50% Security Deposit' : 'Pay in Full'}
                                         </span>
                                     </div>
-                                    <span className="text-3xl font-black tracking-tighter">£{bookingDetails.paymentAmount.toFixed(2)}</span>
+                                    <span className="text-3xl sm:text-4xl font-black tracking-tighter shrink-0 leading-none">£{bookingDetails.paymentAmount.toFixed(2)}</span>
                                 </div>
                             </div>
 
-                            <button
-                                onClick={handlePayment}
-                                disabled={isProcessing}
-                                className="w-full bg-primary hover:bg-primary/90 text-white py-6 rounded-2xl font-black text-sm tracking-[0.3em] uppercase shadow-2xl shadow-primary/20 transition-all duration-500 flex items-center justify-center gap-4 disabled:opacity-50 disabled:cursor-not-allowed group active:scale-[0.98]"
-                            >
-                                {isProcessing ? (
-                                    <div className="w-6 h-6 border-4 border-white/30 border-t-white rounded-full animate-spin"></div>
-                                ) : (
-                                    <>
-                                        Authorize Checkout
-                                        <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                                    </>
-                                )}
-                            </button>
+                            <CheckoutButton
+                                clientSecret={clientSecret}
+                                bookingDetails={bookingDetails}
+                                onProcessing={setIsProcessing}
+                                onSuccess={() => setIsSuccess(true)}
+                                onError={setError}
+                            />
 
                             <p className="text-center text-[9px] font-black uppercase tracking-[0.2em] text-primary/20">
                                 Clicking authorize confirms your booking
@@ -313,5 +250,123 @@ export default function PaymentGateway({ onBack, bookingDetails }: PaymentGatewa
                 </div>
             </div>
         </div>
+    );
+
+    if (clientSecret) {
+        return (
+            <Elements stripe={stripePromise} options={{ clientSecret }}>
+                {renderContent()}
+            </Elements>
+        );
+    }
+
+    return renderContent();
+}
+
+function CheckoutButton({ clientSecret, bookingDetails, onProcessing, onSuccess, onError }: {
+    clientSecret: string | null;
+    bookingDetails: any;
+    onProcessing: (val: boolean) => void;
+    onSuccess: () => void;
+    onError: (msg: string | null) => void;
+}) {
+    const stripe = useStripe();
+    const elements = useElements();
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const handleCheckout = async () => {
+        if (!stripe || !elements) return;
+        setIsSubmitting(true);
+        onProcessing(true);
+        onError(null);
+
+        try {
+            const { error: stripeError, paymentIntent } = await stripe.confirmPayment({
+                elements,
+                redirect: 'if_required',
+            });
+
+            if (stripeError) throw stripeError;
+
+            // Save to Supabase
+            const { data: customerData } = await supabase
+                .from('customers')
+                .select('id')
+                .eq('email', bookingDetails.customer.email)
+                .single();
+
+            let customerId = customerData?.id;
+
+            if (!customerId) {
+                const { data: newCustomer, error: custError } = await supabase
+                    .from('customers')
+                    .insert({
+                        full_name: bookingDetails.customer.fullName,
+                        email: bookingDetails.customer.email,
+                        phone: bookingDetails.customer.phone
+                    })
+                    .select('id')
+                    .single();
+                if (custError) throw custError;
+                customerId = newCustomer?.id;
+            }
+
+            const { data: appointment, error: bookingError } = await supabase
+                .from('appointments')
+                .insert({
+                    customer_id: customerId,
+                    appointment_date: bookingDetails.date,
+                    start_time: bookingDetails.time,
+                    end_time: bookingDetails.time,
+                    total_amount: bookingDetails.totalPrice,
+                    deposit_amount: bookingDetails.paymentChoice === 'deposit' ? bookingDetails.paymentAmount : 0,
+                    payment_choice: bookingDetails.paymentChoice,
+                    status: 'confirmed',
+                    payment_status: bookingDetails.paymentChoice === 'full' ? 'paid' : 'partially_paid',
+                    is_group_booking: bookingDetails.isGroup,
+                    group_size: bookingDetails.groupSize,
+                    stripe_payment_intent_id: paymentIntent?.id
+                })
+                .select('id')
+                .single();
+
+            if (bookingError) throw bookingError;
+
+            const serviceLinks = bookingDetails.services.map((s: { id: string }) => ({
+                appointment_id: appointment.id,
+                service_id: s.id
+            }));
+
+            const { error: linkError } = await supabase
+                .from('appointment_services')
+                .insert(serviceLinks);
+
+            if (linkError) throw linkError;
+
+            onSuccess();
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : "Payment failed";
+            onError(message);
+        } finally {
+            setIsSubmitting(false);
+            onProcessing(false);
+        }
+    };
+
+    return (
+        <button
+            onClick={handleCheckout}
+            disabled={isSubmitting || !stripe || !clientSecret}
+            className="w-full bg-primary hover:bg-primary/90 text-white py-6 rounded-2xl font-black text-xs sm:text-sm tracking-widest uppercase shadow-2xl shadow-primary/20 transition-all duration-500 flex items-center justify-center gap-4 disabled:opacity-50 disabled:cursor-not-allowed group active:scale-[0.98]"
+        >
+            {isSubmitting ? (
+                <div className="w-6 h-6 border-4 border-white/30 border-t-white rounded-full animate-spin"></div>
+            ) : (
+                <>
+                    Authorize Checkout
+                    <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                </>
+            )}
+        </button>
     );
 }

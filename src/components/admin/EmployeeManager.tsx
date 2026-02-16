@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect } from 'react';
-import { Plus, Edit2, Mail, Phone, X, Trash2, Camera } from "lucide-react";
+import { useState, useEffect, useCallback } from 'react';
+import { Plus, Edit2, Mail, Phone, X, Trash2, Camera, Calendar } from "lucide-react";
 import { createClient } from '@supabase/supabase-js';
+import EmployeeScheduleModal from './EmployeeScheduleModal';
 
 const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -30,16 +31,19 @@ export default function EmployeeManager() {
         is_active: true
     });
 
-    const fetchEmployees = async () => {
+    const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
+    const [scheduleEmployee, setScheduleEmployee] = useState<Employee | null>(null);
+
+    const fetchEmployees = useCallback(async () => {
         setLoading(true);
         const { data } = await supabase.from('employees').select('*').order('full_name');
         if (data) setEmployees(data);
         setLoading(false);
-    };
+    }, []);
 
     useEffect(() => {
         fetchEmployees();
-    }, []);
+    }, [fetchEmployees]);
 
     const handleAdd = () => {
         setEditingEmployee(null);
@@ -132,7 +136,16 @@ export default function EmployeeManager() {
                         </div>
 
                         <div className="flex gap-3">
-                            <button className="flex-1 py-3 bg-secondary/10 hover:bg-secondary/20 rounded-xl text-sm font-black uppercase tracking-widest transition-all">Schedules</button>
+                            <button
+                                onClick={() => {
+                                    setScheduleEmployee(emp);
+                                    setIsScheduleModalOpen(true);
+                                }}
+                                className="flex-1 py-3 bg-secondary/10 hover:bg-secondary/20 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2"
+                            >
+                                <Calendar className="w-3 h-3" />
+                                Schedule
+                            </button>
                             <button
                                 onClick={() => handleEdit(emp)}
                                 className="px-5 py-3 bg-secondary/10 hover:bg-secondary/20 rounded-xl text-primary/40 hover:text-primary transition-all"
@@ -241,6 +254,15 @@ export default function EmployeeManager() {
                         </form>
                     </div>
                 </div>
+            )}
+
+            {isScheduleModalOpen && scheduleEmployee && (
+                <EmployeeScheduleModal
+                    isOpen={isScheduleModalOpen}
+                    onClose={() => setIsScheduleModalOpen(false)}
+                    employeeId={scheduleEmployee.id}
+                    employeeName={scheduleEmployee.full_name}
+                />
             )}
         </div>
     );

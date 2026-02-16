@@ -427,7 +427,9 @@ export default function BookingPage() {
                 </div>
               </div>
 
-              <div className="max-w-xl mx-auto pt-10">
+              </div>
+
+              <div className="pt-10">
                 <PaymentGateway
                   onBack={() => setStep(4)}
                   bookingDetails={{
@@ -445,83 +447,73 @@ export default function BookingPage() {
               </div>
             </div>
           )}
-        </div>
+      </div>
 
-        {/* Floating Sidebar (Basket) - Visible on Step 1 */}
-        <div className="lg:col-span-4 lg:sticky lg:top-32 h-fit space-y-6">
-          {selectedServices.length > 0 && (
-            <div className="glass p-8 rounded-[2.5rem] border-primary/20 animate-in slide-in-from-right-4 duration-700 shadow-2xl shadow-primary/5 overflow-hidden relative">
-              {/* Decorative Elements */}
-              <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full -mr-16 -mt-16 blur-3xl opacity-50" />
-              <div className="absolute bottom-0 left-0 w-20 h-20 bg-secondary/10 rounded-full -ml-10 -mb-10 blur-2xl opacity-50" />
+      {/* Floating Sidebar (Basket) - Visible on steps 1-4 */}
+      <div className="lg:col-span-4 lg:sticky lg:top-32 h-fit space-y-6">
+        {selectedServices.length > 0 && step < 5 && (
+          <div className="glass p-8 rounded-[2.5rem] border-primary/20 animate-in slide-in-from-right-4 duration-700 shadow-2xl shadow-primary/5 overflow-hidden relative">
+            {/* Decorative Elements */}
+            <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full -mr-16 -mt-16 blur-3xl opacity-50" />
+            <div className="absolute bottom-0 left-0 w-20 h-20 bg-secondary/10 rounded-full -ml-10 -mb-10 blur-2xl opacity-50" />
 
-              <div className="relative">
-                <div className="flex items-center gap-3 mb-8">
-                  <div className="bg-primary p-2.5 rounded-xl text-white">
-                    <ShoppingBag className="w-5 h-5" />
-                  </div>
-                  <h2 className="text-xl font-black uppercase tracking-widest text-primary">Your Selection</h2>
+            <div className="relative">
+              <div className="flex items-center gap-3 mb-8">
+                <div className="bg-primary p-2.5 rounded-xl text-white">
+                  <ShoppingBag className="w-5 h-5" />
                 </div>
+                <h2 className="text-xl font-black uppercase tracking-widest text-primary">Your Selection</h2>
+              </div>
 
-                <div className="space-y-4 mb-8 max-h-[40vh] overflow-y-auto pr-2 custom-scrollbar">
-                  {selectedServices.map((service) => (
-                    <div key={service.id} className="flex justify-between items-center group animate-in fade-in slide-in-from-bottom-2 duration-300">
-                      <div className="flex-1">
-                        <p className="font-bold text-sm tracking-tight leading-tight mb-1">{service.name}</p>
-                        <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest">£{service.price}</p>
-                      </div>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          toggleService(service);
-                        }}
-                        className="p-2.5 text-red-500/40 hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+              <div className="space-y-4 mb-8 max-h-[40vh] overflow-y-auto pr-2 custom-scrollbar">
+                {selectedServices.map((service) => (
+                  <div key={service.id} className="flex justify-between items-center group animate-in fade-in slide-in-from-bottom-2 duration-300">
+                    <div className="flex-1">
+                      <p className="font-bold text-sm tracking-tight leading-tight mb-1">{service.name}</p>
+                      <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest">£{service.price}</p>
                     </div>
-                  ))}
-                </div>
-
-                <div className="space-y-3 pt-6 border-t border-primary/10">
-                  <div className="flex justify-between items-center text-xs font-black uppercase tracking-widest text-primary/40">
-                    <span>Duration</span>
-                    <span>{totalDuration} MIN</span>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleService(service);
+                      }}
+                      className="p-2.5 text-red-500/40 hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm font-black uppercase tracking-widest text-primary/40">Estimated Total</span>
-                    <span className="text-3xl font-black tracking-tighter text-primary">£{totalPrice}</span>
-                  </div>
+                ))}
+              </div>
+
+              <div className="space-y-3 pt-6 border-t border-primary/10">
+                <div className="flex justify-between items-center text-xs font-black uppercase tracking-widest text-primary/40">
+                  <span>Duration</span>
+                  <span>{totalDuration} MIN</span>
                 </div>
-
-                {step === 1 && (
-                  <button
-                    onClick={() => setStep(2)}
-                    className="w-full bg-primary hover:bg-primary/90 text-white p-5 rounded-2xl font-black tracking-widest uppercase text-xs mt-8 shadow-xl shadow-primary/20 transition-all flex items-center justify-center gap-3 group"
-                  >
-                    Choose Date
-                    <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                  </button>
-                )}
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-black uppercase tracking-widest text-primary/40">Estimated Total</span>
+                  <span className="text-3xl font-black tracking-tighter text-primary">£{totalPrice}</span>
+                </div>
               </div>
-            </div>
-          )}
 
-          {selectedServices.length === 0 && (
-            <div className="glass p-10 rounded-[2.5rem] border-white/5 text-center space-y-6">
-              <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto">
-                <ShoppingBag className="w-8 h-8 text-white/20" />
-              </div>
-              <p className="text-sm font-bold text-muted-foreground leading-relaxed">Select one or more services to start your booking journey.</p>
+              {step === 1 && (
+                <button
+                  onClick={() => setStep(2)}
+                  className="w-full bg-primary hover:bg-primary/90 text-white p-5 rounded-2xl font-black tracking-widest uppercase text-xs mt-8 shadow-xl shadow-primary/20 transition-all flex items-center justify-center gap-3 group"
+                >
+                  Choose Date
+                  <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                </button>
+              )}
             </div>
-          )}
-
-          <div className="glass p-6 rounded-[2rem] border-primary/10 flex items-start gap-4">
-            <Info className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-            <p className="text-[11px] text-muted-foreground/80 leading-relaxed font-semibold italic">
-              Cancellations must be made 24 hours in advance. Deposits are transferable but non-refundable for late cancellations.
-            </p>
           </div>
+        )}
+
+        <div className="glass p-6 rounded-[2rem] border-primary/10 flex items-start gap-4">
+          <Info className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+          <p className="text-[11px] text-muted-foreground/80 leading-relaxed font-semibold italic">
+            Cancellations must be made 24 hours in advance. Deposits are transferable but non-refundable for late cancellations.
+          </p>
         </div>
       </div>
     </main>

@@ -50,6 +50,59 @@ export default function ManualAppointmentModal({ isOpen, onClose }: { isOpen: bo
         }
     }, []);
 
+    const handleCreateAppointment = async () => {
+        try {
+            // 1. Handle Customer (Find or Create)
+            let customerId;
+            const { data: customerData } = await supabase
+                .from('customers')
+                .select('id')
+                .eq('email', formData.email)
+                .single();
+
+            if (customerData) {
+                customerId = customerData.id;
+            } else {
+                const { data: newCustomer, error: custError } = await supabase
+                    .from('customers')
+                    .insert({
+                        full_name: `${formData.firstName} ${formData.lastName}`,
+                        email: formData.email,
+                        phone: formData.phone
+                    })
+                    .select('id')
+                    .single();
+                if (custError) throw custError;
+                customerId = newCustomer.id;
+            }
+
+            // 2. Create Appointment
+            const { error: apptError } = await supabase
+                .from('appointments')
+                .insert({
+                    customer_id: customerId,
+                    employee_id: formData.employeeId || null,
+                    service_id: formData.serviceId || null,
+                    appointment_date: formData.appointmentDate,
+                    start_time: formData.startTime,
+                    end_time: formData.startTime, // Simplified
+                    status: 'confirmed',
+                    total_amount: totalPrice,
+                    payment_status: formData.paymentStatus,
+                    notes: formData.customerNotes,
+                    admin_notes: formData.adminNotes
+                });
+
+            if (apptError) throw apptError;
+
+            alert('Appointment created successfully!');
+            onClose();
+        } catch (error: any) {
+            console.error('Error creating appointment:', error);
+            alert('Failed to create appointment: ' + error.message);
+        }
+    };
+
     useEffect(() => {
         if (isOpen) {
             fetchInitialData();
@@ -173,15 +226,13 @@ export default function ManualAppointmentModal({ isOpen, onClose }: { isOpen: bo
                                     </select>
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-[10px] uppercase tracking-widest font-black text-primary/30 ml-1">Assign Employee</label>
-                                    <select
+                                    <label className="text-[10px] uppercase tracking-widest font-black text-primary/30 ml-1">Appointment Date</label>
+                                    <input
+                                        type="date"
                                         className="w-full px-4 py-3 bg-secondary/5 rounded-xl outline-none border border-transparent focus:border-primary/20 text-sm font-medium"
-                                        value={formData.employeeId}
-                                        onChange={(e) => setFormData({ ...formData, employeeId: e.target.value })}
-                                    >
-                                        <option value="">Assign Employee</option>
-                                        {employees.map(emp => <option key={emp.id} value={emp.id}>{emp.full_name}</option>)}
-                                    </select>
+                                        value={formData.appointmentDate}
+                                        onChange={(e) => setFormData({ ...formData, appointmentDate: e.target.value })}
+                                    />
                                 </div>
                             </div>
 
@@ -202,13 +253,26 @@ export default function ManualAppointmentModal({ isOpen, onClose }: { isOpen: bo
                                 </div>
                             )}
 
-                            <div className="bg-secondary/10 p-4 rounded-2xl flex items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                    <div className={`w-12 h-6 rounded-full relative transition-colors cursor-pointer ${formData.useCoupon ? 'bg-primary' : 'bg-primary/20'}`}
-                                        onClick={() => setFormData({ ...formData, useCoupon: !formData.useCoupon })}>
-                                        <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${formData.useCoupon ? 'left-7' : 'left-1'}`} />
-                                    </div>
-                                    <span className="font-bold text-primary/80">Use Coupon</span>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <label className="text-[10px] uppercase tracking-widest font-black text-primary/30 ml-1">Assign Employee</label>
+                                    <select
+                                        className="w-full px-4 py-3 bg-secondary/5 rounded-xl outline-none border border-transparent focus:border-primary/20 text-sm font-medium"
+                                        value={formData.employeeId}
+                                        onChange={(e) => setFormData({ ...formData, employeeId: e.target.value })}
+                                    >
+                                        <option value="">Assign Employee</option>
+                                        {employees.map(emp => <option key={emp.id} value={emp.id}>{emp.full_name}</option>)}
+                                    </select>
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[10px] uppercase tracking-widest font-black text-primary/30 ml-1">Start Time</label>
+                                    <input
+                                        type="time"
+                                        className="w-full px-4 py-3 bg-secondary/5 rounded-xl outline-none border border-transparent focus:border-primary/20 text-sm font-medium"
+                                        value={formData.startTime}
+                                        onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
+                                    />
                                 </div>
                             </div>
                         </div>
@@ -268,7 +332,9 @@ export default function ManualAppointmentModal({ isOpen, onClose }: { isOpen: bo
                         Cancel
                     </button>
                     <button
-                        className="flex-1 px-6 py-3 bg-primary text-white text-sm font-black uppercase tracking-widest rounded-xl shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                        onClick={handleCreateAppointment}
+                        disabled={!formData.email || !formData.serviceId || !formData.appointmentDate}
+                        className="flex-1 px-6 py-3 bg-primary text-white text-sm font-black uppercase tracking-widest rounded-xl shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                     >
                         Create Appointment
                     </button>
