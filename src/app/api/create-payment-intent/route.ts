@@ -2,9 +2,9 @@ import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 
-const stripeSecretKey = process.env.STRIPE_SECRET_KEY || '';
-if (!stripeSecretKey) {
-    console.warn('Stripe Secret Key missing. Stripe client will not be initialized correctly.');
+const stripeSecretKey = process.env.STRIPE_SECRET_KEY || 'sk_test_placeholder';
+if (stripeSecretKey === 'sk_test_placeholder') {
+    console.warn('STRIPE_SECRET_KEY is missing. Using placeholder for build.');
 }
 
 const stripe = new Stripe(stripeSecretKey, {
