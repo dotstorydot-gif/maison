@@ -43,7 +43,6 @@ export default function PaymentGateway({ onBack, bookingDetails }: PaymentGatewa
     const [clientSecret, setClientSecret] = useState<string | null>(null);
 
     const handleInitialSubmit = useCallback(async () => {
-        setIsProcessing(true);
         setError(null);
         try {
             const response = await fetch('/api/create-payment-intent', {
