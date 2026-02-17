@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useEffect, useCallback } from 'react';
 import { X, Plus, Info, RotateCcw, Lock, ChevronDown } from "lucide-react";
 import { createClient } from '@supabase/supabase-js';

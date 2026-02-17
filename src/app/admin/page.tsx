@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useEffect, useCallback } from "react";
 import { LayoutDashboard, Users, Calendar, Settings, TrendingUp, Plus, Search, Bell, Lock, LogOut, PoundSterling } from "lucide-react";
 import { clsx, type ClassValue } from "clsx";
