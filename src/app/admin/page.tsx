@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { LayoutDashboard, Users, Calendar, Settings, TrendingUp, Clock, PoundSterling, Plus, Search, Bell, Lock, LogOut } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { LayoutDashboard, Users, Calendar, Settings, TrendingUp, Plus, Search, Bell, Lock, LogOut, PoundSterling } from "lucide-react";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import Image from "next/image";
@@ -15,13 +15,6 @@ function cn(...inputs: ClassValue[]) {
     return twMerge(clsx(inputs));
 }
 
-const STATS = [
-    { name: "Total Revenue", value: "£2,040", icon: PoundSterling, change: "+12.5%", color: "text-green-600" },
-    { name: "Appointments", value: "33", icon: Calendar, change: "-6%", color: "text-red-500" },
-    { name: "Hours Worked", value: "32.8h", icon: Clock, change: "-4%", color: "text-red-500" },
-    { name: "New Customers", value: "8", icon: Users, change: "-11%", color: "text-red-500" },
-];
-
 export default function AdminDashboard() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [activeTab, setActiveTab] = useState("Overview");
@@ -30,6 +23,13 @@ export default function AdminDashboard() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
+
+    const [stats, setStats] = useState<{ name: string; value: string; icon: any; change: string; color: string }[]>([
+        { name: "Total Revenue", value: "£0", icon: PoundSterling, change: "Live", color: "text-green-600" },
+        { name: "Total Appointments", value: "0", icon: Calendar, change: "Live", color: "text-blue-500" },
+        { name: "Total Customers", value: "0", icon: Users, change: "Live", color: "text-purple-500" },
+    ]);
+    const [upcomingAppointments, setUpcomingAppointments] = useState<any[]>([]);
 
     useEffect(() => {
         supabase.auth.getSession().then(({ data: { session } }) => {
@@ -43,6 +43,55 @@ export default function AdminDashboard() {
 
         return () => subscription.unsubscribe();
     }, []);
+
+    const fetchDashboardData = useCallback(async () => {
+        try {
+            const { data: appointments } = await supabase.from('appointments').select('total_amount');
+            const { count: customerCount } = await supabase.from('customers').select('*', { count: 'exact', head: true });
+            const { count: appointmentCount } = await supabase.from('appointments').select('*', { count: 'exact', head: true });
+
+            const totalRevenue = appointments?.reduce((sum, apt) => sum + (apt.total_amount || 0), 0) || 0;
+
+            setStats([
+                { name: "Total Revenue", value: `£${totalRevenue.toLocaleString()}`, icon: PoundSterling, change: "Live", color: "text-green-600" },
+                { name: "Total Appointments", value: String(appointmentCount || 0), icon: Calendar, change: "Live", color: "text-blue-500" },
+                { name: "Total Customers", value: String(customerCount || 0), icon: Users, change: "Live", color: "text-purple-500" },
+            ]);
+
+            const { data: upcoming } = await supabase
+                .from('appointments')
+                .select(`
+                    id,
+                    appointment_date,
+                    start_time,
+                    total_amount,
+                    status,
+                    customers (full_name)
+                `)
+                .order('appointment_date', { ascending: true })
+                .order('start_time', { ascending: true })
+                .limit(5);
+
+            if (upcoming) {
+                setUpcomingAppointments(upcoming.map((apt: any) => ({
+                    id: apt.id,
+                    customer: (apt.customers as any)?.full_name || "Unknown",
+                    service: "Appt Review",
+                    time: `${apt.appointment_date} @ ${apt.start_time}`,
+                    status: apt.status,
+                    amount: `£${apt.total_amount}`
+                })));
+            }
+        } catch (err) {
+            console.error("Dashboard fetch error:", err);
+        }
+    }, []);
+
+    useEffect(() => {
+        if (user && activeTab === "Overview") {
+            fetchDashboardData();
+        }
+    }, [user, activeTab, fetchDashboardData]);
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -63,9 +112,7 @@ export default function AdminDashboard() {
         );
     }
 
-    const isAdmin = user?.email?.endsWith('@maisondepoupee.com') ||
-        user?.email === 'admin@example.com' ||
-        user?.email === 'sameh@dot-story.com';
+    const isAdmin = user?.email?.endsWith('@maisondepoupee.com');
 
     if (!user || !isAdmin) {
         return (
@@ -87,7 +134,7 @@ export default function AdminDashboard() {
                                     type="email"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
-                                    className="w-full bg-white/5 border border-white/5 rounded-2xl p-4 focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all"
+                                    className="w-full bg-white/5 border border-white/5 rounded-2xl p-4 focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all font-medium"
                                     placeholder="admin@maisondepoupee.com"
                                     required
                                 />
@@ -98,7 +145,7 @@ export default function AdminDashboard() {
                                     type="password"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
-                                    className="w-full bg-white/5 border border-white/5 rounded-2xl p-4 focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all"
+                                    className="w-full bg-white/5 border border-white/5 rounded-2xl p-4 focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all font-medium"
                                     placeholder="••••••••"
                                     required
                                 />
@@ -211,12 +258,12 @@ export default function AdminDashboard() {
                     {activeTab === "Overview" && (
                         <>
                             <header>
-                                <h2 className="text-2xl font-black tracking-tight mb-1">Dashboard Overview</h2>
+                                <h2 className="text-2xl font-black tracking-tight mb-1 font-serif">Dashboard Overview</h2>
                                 <p className="text-primary/40 text-sm font-medium">Welcome back, Admin.</p>
                             </header>
 
                             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                                {STATS.map((stat) => (
+                                {stats.map((stat: any) => (
                                     <div key={stat.name} className="bg-white p-6 rounded-2xl border border-secondary shadow-sm hover:shadow-lg hover:shadow-primary/5 transition-all group">
                                         <div className="flex justify-between items-start mb-4">
                                             <div className="p-3 rounded-xl bg-secondary/20 group-hover:bg-primary transition-colors">
@@ -233,42 +280,45 @@ export default function AdminDashboard() {
                             <section className="bg-white p-8 rounded-3xl border border-secondary shadow-sm">
                                 <div className="flex justify-between items-center mb-8">
                                     <div>
-                                        <h3 className="text-lg font-black tracking-tight">Upcoming Appointments</h3>
+                                        <h3 className="text-lg font-black tracking-tight font-serif">Upcoming Appointments</h3>
                                         <p className="text-primary/40 text-[11px] font-bold uppercase tracking-widest">Live Schedule</p>
                                     </div>
                                     <button className="text-primary text-xs font-bold hover:underline">View Calendar</button>
                                 </div>
 
                                 <div className="space-y-4">
-                                    {[
-                                        { id: 1, customer: "Sarah Johnson", service: "Japanese Manicure", time: "03:30 PM", status: "confirmed", amount: "£50" },
-                                        { id: 2, customer: "Emma Wilson", service: "Japanese Pedicure", time: "04:30 PM", status: "pending", amount: "£50" },
-                                        { id: 3, customer: "Olivia Brown", service: "BIAB Manicure", time: "05:30 PM", status: "confirmed", amount: "£80" },
-                                    ].map((apt) => (
-                                        <div key={apt.id} className="group flex items-center justify-between p-4 bg-secondary/5 hover:bg-secondary/10 rounded-2xl transition-all cursor-pointer border border-transparent hover:border-primary/10">
-                                            <div className="flex items-center gap-4">
-                                                <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center text-primary text-sm font-black shadow-sm group-hover:scale-105 transition-transform">
-                                                    {apt.customer[0]}
+                                    {upcomingAppointments.length > 0 ? (
+                                        upcomingAppointments.map((apt: any) => (
+                                            <div key={apt.id} className="group flex items-center justify-between p-4 bg-secondary/5 hover:bg-secondary/10 rounded-2xl transition-all cursor-pointer border border-transparent hover:border-primary/10">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center text-primary text-sm font-black shadow-sm group-hover:scale-105 transition-transform uppercase">
+                                                        {apt.customer[0]}
+                                                    </div>
+                                                    <div>
+                                                        <div className="font-black text-base">{apt.customer}</div>
+                                                        <div className="text-primary/40 text-sm font-bold">{apt.service}</div>
+                                                    </div>
                                                 </div>
-                                                <div>
-                                                    <div className="font-black text-base">{apt.customer}</div>
-                                                    <div className="text-primary/40 text-sm font-bold">{apt.service}</div>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center gap-8">
-                                                <div className="text-right">
-                                                    <div className="font-black text-base">{apt.time}</div>
-                                                    <div className="text-primary text-sm font-black opacity-40">{apt.amount}</div>
-                                                </div>
-                                                <div className={cn(
-                                                    "px-4 py-1.5 rounded-lg text-xs font-black uppercase tracking-widest",
-                                                    apt.status === "confirmed" ? "bg-primary text-white shadow-md shadow-primary/20" : "bg-secondary/40 text-primary/40"
-                                                )}>
-                                                    {apt.status}
+                                                <div className="flex items-center gap-8">
+                                                    <div className="text-right">
+                                                        <div className="font-black text-base">{apt.time}</div>
+                                                        <div className="text-primary text-sm font-black opacity-40">{apt.amount}</div>
+                                                    </div>
+                                                    <div className={cn(
+                                                        "px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest",
+                                                        apt.status === "confirmed" ? "bg-primary text-white shadow-md shadow-primary/20" : "bg-secondary/40 text-primary/40"
+                                                    )}>
+                                                        {apt.status}
+                                                    </div>
                                                 </div>
                                             </div>
+                                        ))
+                                    ) : (
+                                        <div className="text-center py-12 bg-secondary/5 rounded-2xl border border-dashed border-primary/10">
+                                            <Calendar className="w-8 h-8 text-primary/10 mx-auto mb-4" />
+                                            <p className="text-[10px] font-black text-primary/30 uppercase tracking-[0.2em]">No upcoming appointments found</p>
                                         </div>
-                                    ))}
+                                    )}
                                 </div>
                             </section>
                         </>
