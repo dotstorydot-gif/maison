@@ -167,26 +167,10 @@ export default function CalendarManager() {
 
                     <div className="lg:col-span-4 space-y-6">
                         <div className="bg-white p-6 rounded-3xl border border-secondary shadow-sm">
-                            <h3 className="text-sm font-black text-primary uppercase tracking-widest mb-6 pb-4 border-b border-secondary">Technicians On Duty</h3>
-                            <div className="space-y-4">
-                                {[1, 2, 3].map(i => (
-                                    <div key={i} className="flex items-center justify-between">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 rounded-lg bg-secondary/30 flex items-center justify-center text-primary text-[10px] font-black">T{i}</div>
-                                            <div className="text-xs font-bold text-primary">Technician {i}</div>
-                                        </div>
-                                        <div className="w-1.5 h-1.5 rounded-full bg-green-400"></div>
-                                    </div>
-                                ))}
+                            <h3 className="text-sm font-black text-primary uppercase tracking-widest mb-6 pb-4 border-b border-secondary">Shift Management</h3>
+                            <div className="text-center py-8 opacity-20 italic text-[10px] font-black uppercase tracking-widest underline decoration-primary/20">
+                                Staff Scheduling Module Coming Soon
                             </div>
-                        </div>
-
-                        <div className="bg-primary text-white p-6 rounded-3xl shadow-xl shadow-primary/20 relative overflow-hidden">
-                            <div className="relative z-10">
-                                <h3 className="text-2xl font-black tracking-tighter mb-1">£{appointments.reduce((sum, a) => sum + (Number(a.total_amount) || 0), 0)}</h3>
-                                <p className="text-white/60 text-[10px] font-black uppercase tracking-widest">Projected Revenue</p>
-                            </div>
-                            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-3xl"></div>
                         </div>
                     </div>
                 </div>
@@ -211,14 +195,6 @@ export default function CalendarManager() {
                                         <span className={cn("text-xs font-bold", day.toDateString() === new Date().toDateString() ? "w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center -ml-1" : "text-primary")}>
                                             {day.getDate()}
                                         </span>
-                                        {day.getDate() % 3 === 0 && (
-                                            <div className="w-full space-y-1 mt-2">
-                                                <div className="h-1.5 w-full bg-primary/20 rounded-full overflow-hidden">
-                                                    <div className="h-full bg-primary" style={{ width: `${(day.getDate() % 5 + 1) * 20}%` }}></div>
-                                                </div>
-                                                <span className="text-[9px] font-black text-primary/40 uppercase tracking-tighter">{day.getDate() % 5 + 1} Bookings</span>
-                                            </div>
-                                        )}
                                     </>
                                 )}
                             </div>

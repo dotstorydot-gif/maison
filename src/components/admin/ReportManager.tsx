@@ -174,10 +174,10 @@ export default function ReportManager() {
     );
 
     const stats = [
-        { name: "Total Revenue", value: `£${data?.totalRevenue.toFixed(2)}`, icon: PoundSterling, change: "+12.5%", trend: "up" },
-        { name: "Appointments", value: data?.totalAppointments.toString(), icon: Calendar, change: "+8.2%", trend: "up" },
-        { name: "Hours Worked", value: `${data?.totalHours}h`, icon: Clock, change: "-3.1%", trend: "down" },
-        { name: "New Customers", value: data?.newCustomers.toString(), icon: Users, change: "+15.0%", trend: "up" },
+        { name: "Total Revenue", value: `£${data?.totalRevenue.toFixed(2)}`, icon: PoundSterling, change: "Live", trend: "up" },
+        { name: "Appointments", value: data?.totalAppointments.toString(), icon: Calendar, change: "Live", trend: "up" },
+        { name: "Hours Worked", value: `${data?.totalHours}h`, icon: Clock, change: "Live", trend: "up" },
+        { name: "New Customers", value: data?.newCustomers.toString(), icon: Users, change: "Live", trend: "up" },
     ];
 
     return (
