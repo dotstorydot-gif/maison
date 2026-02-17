@@ -38,7 +38,6 @@ interface PaymentGatewayProps {
 }
 
 export default function PaymentGateway({ onBack, bookingDetails }: PaymentGatewayProps) {
-    const [isProcessing, setIsProcessing] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [clientSecret, setClientSecret] = useState<string | null>(null);
@@ -63,7 +62,7 @@ export default function PaymentGateway({ onBack, bookingDetails }: PaymentGatewa
             const message = err instanceof Error ? err.message : "Initialization failed";
             setError(message);
         } finally {
-            setIsProcessing(false);
+            // Processing handled by Stripe transition
         }
     }, [bookingDetails.services, bookingDetails.paymentChoice, bookingDetails.customer.email]);
 
@@ -216,21 +215,22 @@ export default function PaymentGateway({ onBack, bookingDetails }: PaymentGatewa
                                     <span className="text-[10px] font-black uppercase tracking-widest text-primary/40">Subtotal</span>
                                     <span className="text-sm font-black opacity-40">£{bookingDetails.totalPrice.toFixed(2)}</span>
                                 </div>
-                                <div className="flex flex-col sm:flex-row justify-between items-center bg-primary text-white p-6 rounded-2xl shadow-xl shadow-primary/10 gap-x-4 gap-y-2">
-                                    <div className="flex flex-col text-center sm:text-left">
-                                        <span className="text-[9px] font-black uppercase tracking-widest opacity-60">Amount Due Now</span>
-                                        <span className="text-[9px] font-bold italic opacity-40 leading-none">
+                                <div className="flex flex-col sm:flex-row justify-between items-center bg-primary text-white p-6 rounded-2xl shadow-xl shadow-primary/10 gap-x-6 gap-y-3 min-h-[100px] sm:min-h-[80px]">
+                                    <div className="flex flex-col text-center sm:text-left space-y-0.5">
+                                        <span className="text-[10px] font-black uppercase tracking-widest opacity-70">Amount Due Now</span>
+                                        <span className="text-[10px] font-bold italic opacity-50 leading-tight">
                                             {bookingDetails.paymentChoice === 'deposit' ? '50% Security Deposit' : 'Pay in Full'}
                                         </span>
                                     </div>
-                                    <span className="text-3xl sm:text-4xl font-black tracking-tighter shrink-0 leading-none">£{bookingDetails.paymentAmount.toFixed(2)}</span>
+                                    <span className="text-3xl sm:text-4xl font-black tracking-tighter shrink-0 leading-none py-1">
+                                        £{bookingDetails.paymentAmount.toFixed(2)}
+                                    </span>
                                 </div>
                             </div>
 
                             <CheckoutButton
                                 clientSecret={clientSecret}
                                 bookingDetails={bookingDetails}
-                                onProcessing={setIsProcessing}
                                 onSuccess={() => setIsSuccess(true)}
                                 onError={setError}
                             />
@@ -263,10 +263,19 @@ export default function PaymentGateway({ onBack, bookingDetails }: PaymentGatewa
     return renderContent();
 }
 
-function CheckoutButton({ clientSecret, bookingDetails, onProcessing, onSuccess, onError }: {
+function CheckoutButton({ clientSecret, bookingDetails, onSuccess, onError }: {
     clientSecret: string | null;
-    bookingDetails: any;
-    onProcessing: (val: boolean) => void;
+    bookingDetails: {
+        customer: { email: string; fullName: string; phone: string };
+        date: string;
+        time: string;
+        totalPrice: number;
+        paymentChoice: 'deposit' | 'full';
+        paymentAmount: number;
+        isGroup: boolean;
+        groupSize: number;
+        services: { id: string }[];
+    };
     onSuccess: () => void;
     onError: (msg: string | null) => void;
 }) {
@@ -277,7 +286,6 @@ function CheckoutButton({ clientSecret, bookingDetails, onProcessing, onSuccess,
     const handleCheckout = async () => {
         if (!stripe || !elements) return;
         setIsSubmitting(true);
-        onProcessing(true);
         onError(null);
 
         try {
@@ -349,7 +357,6 @@ function CheckoutButton({ clientSecret, bookingDetails, onProcessing, onSuccess,
             onError(message);
         } finally {
             setIsSubmitting(false);
-            onProcessing(false);
         }
     };
 

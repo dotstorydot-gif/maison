@@ -29,7 +29,14 @@ export default function AdminDashboard() {
         { name: "Total Appointments", value: "0", icon: Calendar, change: "Live", color: "text-blue-500" },
         { name: "Total Customers", value: "0", icon: Users, change: "Live", color: "text-purple-500" },
     ]);
-    const [upcomingAppointments, setUpcomingAppointments] = useState<any[]>([]);
+    const [upcomingAppointments, setUpcomingAppointments] = useState<{
+        id: string;
+        customer: string;
+        service: string;
+        time: string;
+        status: string;
+        amount: string;
+    }[]>([]);
 
     useEffect(() => {
         supabase.auth.getSession().then(({ data: { session } }) => {
@@ -262,17 +269,27 @@ export default function AdminDashboard() {
                                 <p className="text-primary/40 text-sm font-medium">Welcome back, Admin.</p>
                             </header>
 
-                            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                 {stats.map((stat: any) => (
-                                    <div key={stat.name} className="bg-white p-6 rounded-2xl border border-secondary shadow-sm hover:shadow-lg hover:shadow-primary/5 transition-all group">
-                                        <div className="flex justify-between items-start mb-4">
-                                            <div className="p-3 rounded-xl bg-secondary/20 group-hover:bg-primary transition-colors">
-                                                <stat.icon className="w-5 h-5 text-primary group-hover:text-white" />
+                                    <div key={stat.name} className="bg-white p-8 rounded-3xl border border-secondary shadow-sm hover:shadow-xl hover:shadow-primary/5 transition-all group overflow-hidden relative">
+                                        <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 blur-2xl opacity-0 group-hover:opacity-100 transition-opacity" />
+
+                                        <div className="flex justify-between items-center mb-6 relative">
+                                            <div className="p-4 rounded-2xl bg-secondary/15 group-hover:bg-primary transition-all duration-500 scale-100 group-hover:scale-110">
+                                                <stat.icon className="w-6 h-6 text-primary group-hover:text-white transition-colors" />
                                             </div>
-                                            <div className={cn("text-xs font-black px-2 py-0.5 bg-secondary/20 rounded-md", stat.color)}>{stat.change}</div>
+                                            <div className={cn(
+                                                "text-[9px] font-black px-3 py-1 bg-secondary/20 rounded-full uppercase tracking-widest border border-white/50",
+                                                stat.color
+                                            )}>
+                                                {stat.change}
+                                            </div>
                                         </div>
-                                        <div className="text-xs font-bold text-primary/30 uppercase tracking-widest mb-1">{stat.name}</div>
-                                        <div className="text-2xl font-black tracking-tighter">{stat.value}</div>
+
+                                        <div className="relative">
+                                            <div className="text-[11px] font-black text-primary/30 uppercase tracking-[0.2em] mb-2">{stat.name}</div>
+                                            <div className="text-4xl font-black tracking-tighter text-primary">{stat.value}</div>
+                                        </div>
                                     </div>
                                 ))}
                             </div>
