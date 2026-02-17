@@ -187,7 +187,7 @@ export default function AdminDashboard() {
                 <div className="flex items-center gap-3">
                     <Image src="/logo.png" alt="Logo" width={32} height={32} className="object-contain" />
                     <div className="text-xl font-black tracking-tighter text-primary">
-                        MAISON ADMIN
+                        MAISON ADMIN (LATEST)
                     </div>
                 </div>
 
