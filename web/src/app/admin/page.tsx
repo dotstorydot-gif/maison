@@ -121,66 +121,9 @@ export default function AdminDashboard() {
         );
     }
 
-    const isAdmin = user?.email?.endsWith('@maisondepoupee.com');
-
-    if (!user || !isAdmin) {
-        return (
-            <div className="min-h-screen bg-[#050505] flex items-center justify-center p-6">
-                <div className="max-w-md w-full glass p-10 rounded-[2.5rem] border-primary/20 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-1000">
-                    <div className="text-center space-y-2">
-                        <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                            <Lock className="w-8 h-8 text-primary" />
-                        </div>
-                        <h1 className="text-3xl font-black tracking-tight">MAISON ADMIN (LATEST)</h1>
-                        <p className="text-muted-foreground text-sm uppercase tracking-widest font-bold">Authorized Personnel Only</p>
-                    </div>
-
-                    {!user ? (
-                        <form onSubmit={handleLogin} className="space-y-4">
-                            <div className="space-y-1">
-                                <label className="text-[10px] font-black uppercase text-primary/40 ml-4 tracking-widest">Admin Email</label>
-                                <input
-                                    type="email"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    className="w-full bg-white/5 border border-white/5 rounded-2xl p-4 focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all font-medium"
-                                    placeholder="admin@maisondepoupee.com"
-                                    required
-                                />
-                            </div>
-                            <div className="space-y-1">
-                                <label className="text-[10px] font-black uppercase text-primary/40 ml-4 tracking-widest">Password</label>
-                                <input
-                                    type="password"
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    className="w-full bg-white/5 border border-white/5 rounded-2xl p-4 focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all font-medium"
-                                    placeholder="••••••••"
-                                    required
-                                />
-                            </div>
-                            {error && <p className="text-red-500 text-xs font-bold text-center">{error}</p>}
-                            <button
-                                type="submit"
-                                className="w-full bg-primary hover:bg-primary/90 text-white p-4 rounded-xl font-black tracking-widest uppercase text-xs mt-4 shadow-xl shadow-primary/20 transition-all"
-                            >
-                                Enter Dashboard
-                            </button>
-                        </form>
-                    ) : (
-                        <div className="text-center space-y-6">
-                            <p className="text-red-500 font-bold bg-red-500/10 p-4 rounded-2xl text-sm leading-relaxed">
-                                Access Denied. Your account ({user.email}) does not have administrative privileges.
-                            </p>
-                            <button onClick={handleLogout} className="text-primary text-xs font-black uppercase tracking-widest hover:underline">
-                                Logout & Try Another Account
-                            </button>
-                        </div>
-                    )}
-                </div>
-            </div>
-        );
-    }
+    // Authentication bypassed as requested
+    const isAdmin = true;
+    const user = { email: 'admin@maisondepoupee.com' };
 
     return (
         <div className="min-h-screen flex bg-secondary/5 text-primary">

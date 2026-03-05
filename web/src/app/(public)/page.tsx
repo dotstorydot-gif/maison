@@ -72,7 +72,7 @@ export default function HomePage() {
                         The Dollhouse of Elegance
                     </div>
 
-                    <h1 className="text-5xl md:text-7xl font-black tracking-widest leading-none text-white mb-4 uppercase drop-shadow-2xl">
+                    <h1 className="text-5xl md:text-8xl font-black tracking-tighter leading-none text-white mb-4 uppercase drop-shadow-2xl !font-sans">
                         MAISON DE <br />
                         <span className="text-primary">POUPÉE</span>
                     </h1>
