@@ -122,8 +122,8 @@ export default function AdminDashboard() {
     }
 
     // Authentication bypassed as requested
-    const isAdmin = true;
-    const user = { email: 'admin@maisondepoupee.com' };
+    const isActuallyAdmin = true;
+    const dummyUser = { email: 'admin@maisondepoupee.com' };
 
     return (
         <div className="min-h-screen flex bg-secondary/5 text-primary">
