@@ -21,7 +21,7 @@ export default function HomePage() {
         {
             title: "Hair",
             text: "Your hair is your crown-wear it with confidence and grace. From the perfect cut to flawless styling and luxurious extensions, we create a look that's uniquely yours. Because when you feel your best, you shine unapologetically!",
-            video: "https://maisondepoupee.co.uk/wp-content/uploads/2024/10/Nails.mp4",
+            video: "https://maisondepoupee.co.uk/wp-content/uploads/2025/03/IMG_6121.mov",
             type: "video",
         },
         {
@@ -39,7 +39,8 @@ export default function HomePage() {
         {
             title: "Semi Permanent Makeup",
             text: "Enhance your natural beauty effortlessly with semi-permanent makeup-flawless brows, defined eyes. Wake up every day with confidence, knowing your features are perfectly shaped and beautifully enhanced.",
-            icon: "face",
+            video: "https://maisondepoupee.co.uk/wp-content/uploads/2025/03/IMG_6121.mov",
+            type: "video",
         },
         {
             title: "Aesthetics",
@@ -81,7 +82,7 @@ export default function HomePage() {
                         <Image src="/logox.png" alt="Maison Logo" width={161} height={242} className="w-24 h-auto opacity-90 drop-shadow-lg" />
                     </div>
 
-                    <p className="max-w-xl mx-auto text-lg font-light text-white/90 leading-relaxed mb-10 italic">
+                    <p className="max-w-xl mx-auto text-lg font-black text-white/95 leading-relaxed mb-10 italic">
                         Where beauty meets empowerment, and every woman is treated like royalty.
                     </p>
 
